@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot - DeepAI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease-in;
+            line-height: 1.4;
+        }
+
+        .user-message {
+            background: #667eea;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bot-message {
+            background: #f1f3f4;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .typing-indicator {
+            align-self: flex-start;
+            background: #f1f3f4;
+            padding: 12px 16px;
+            border-radius: 18px;
+            border-bottom-left-radius: 5px;
+            display: none;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        .chat-input-container {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        }
+
+        .send-button:hover {
+            transform: scale(1.1);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.offline {
+            background: #f44336;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .error-message {
+            background: #ffebee !important;
+            color: #c62828 !important;
+            border-left: 4px solid #c62828;
+        }
+
+        .success-message {
+            background: #e8f5e8 !important;
+            color: #2e7d32 !important;
+            border-left: 4px solid #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header" style="position: relative;">
+            🤖 AI Assistant - DeepAI
+            <div class="status-indicator" id="statusIndicator"></div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot-message">
+                Hello! I'm your AI assistant powered by DeepAI. I can help you with:
+                <br>• Writing stories and creative content
+                <br>• Answering questions and providing information
+                <br>• Creative writing and text generation
+                <br>• Having engaging conversations
+                <br><br>Try asking me to "write a story about..." or ask me any question!
+            </div>
+        </div>
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <input 
+                type="text" 
+                class="chat-input" 
+                id="chatInput" 
+                placeholder="Type your message here..."
+                maxlength="1000"
+            >
+            <button class="send-button" id="sendButton">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22,2 15,22 11,13 2,9"></polygon>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        class DeepAIChatbot {
+            constructor() {
+                this.apiKey = '2c19e3fa-d74d-49c2-855b-810e61dcbff8';
+                this.apiUrl = 'https://api.deepai.org/api/text-generator';
+                this.chatMessages = document.getElementById('chatMessages');
+                this.chatInput = document.getElementById('chatInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.typingIndicator = document.getElementById('typingIndicator');
+                this.statusIndicator = document.getElementById('statusIndicator');
+                
+                this.initEventListeners();
+                this.testAPIConnection();
+            }
+
+            initEventListeners() {
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                this.chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+                
+                // Auto-resize input on focus
+                this.chatInput.addEventListener('focus', () => {
+                    this.scrollToBottom();
+                });
+            }
+
+            async testAPIConnection() {
+                try {
+                    // Test with a simple request
+                    const response = await fetch(this.apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'api-key': this.apiKey,
+                        },
+                        body: new FormData()
+                    });
+                    
+                    if (response.ok || response.status === 400) {
+                        // 400 is expected for empty request, means API is working
+                        this.setStatus(true);
+                        console.log('DeepAI API connection successful');
+                    } else {
+                        this.setStatus(false);
+                        console.log('DeepAI API connection failed:', response.status);
+                    }
+                } catch (error) {
+                    this.setStatus(false);
+                    console.log('DeepAI API test failed:', error);
+                }
+            }
+
+            setStatus(online) {
+                if (online) {
+                    this.statusIndicator.classList.remove('offline');
+                } else {
+                    this.statusIndicator.classList.add('offline');
+                }
+            }
+
+            addMessage(content, isUser = false, isError = false, isSuccess = false) {
+                const messageDiv = document.createElement('div');
+                let className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+                
+                if (isError) className += ' error-message';
+                if (isSuccess) className += ' success-message';
+                
+                messageDiv.className = className;
+                messageDiv.innerHTML = content.replace(/\n/g, '<br>');
+                this.chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            showTyping() {
+                this.typingIndicator.style.display = 'block';
+                this.scrollToBottom();
+            }
+
+            hideTyping() {
+                this.typingIndicator.style.display = 'none';
+            }
+
+            scrollToBottom() {
+                setTimeout(() => {
+                    this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+                }, 100);
+            }
+
+            async sendMessage() {
+                const message = this.chatInput.value.trim();
+                if (!message) return;
+
+                // Disable input while processing
+                this.chatInput.disabled = true;
+                this.sendButton.disabled = true;
+
+                // Add user message
+                this.addMessage(message, true);
+                this.chatInput.value = '';
+
+                // Show typing indicator
+                this.showTyping();
+
+                try {
+                    const response = await this.callDeepAI(message);
+                    this.hideTyping();
+                    
+                    if (response && response.output) {
+                        const botResponse = this.cleanupResponse(response.output, message);
+                        this.addMessage(botResponse);
+                        this.setStatus(true);
+                    } else {
+                        throw new Error('No response from API');
+                    }
+                } catch (error) {
+                    this.hideTyping();
+                    console.error('Error:', error);
+                    
+                    this.setStatus(false);
+                    
+                    if (error.message.includes('401') || error.message.includes('403')) {
+                        this.addMessage('❌ Authentication failed. Please check the API key.', false, true);
+                    } else if (error.message.includes('429')) {
+                        this.addMessage('⏳ Rate limit exceeded. Please wait a moment before trying again.', false, true);
+                    } else if (error.message.includes('500')) {
+                        this.addMessage('🔧 Server error. The AI service is temporarily unavailable.', false, true);
+                    } else {
+                        // Provide fallback response
+                        const fallbackResponse = this.getFallbackResponse(message);
+                        this.addMessage(fallbackResponse);
+                    }
+                }
+
+                // Re-enable input
+                this.chatInput.disabled = false;
+                this.sendButton.disabled = false;
+                this.chatInput.focus();
+            }
+
+            async callDeepAI(message) {
+                const formData = new FormData();
+                
+                // Create a good prompt for the AI
+                const prompt = this.createPrompt(message);
+                formData.append('text', prompt);
+
+                console.log('Sending to DeepAI:', prompt);
+
+                const response = await fetch(this.apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'api-key': this.apiKey,
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const result = await response.json();
+                console.log('DeepAI Response:', result);
+                return result;
+            }
+
+            createPrompt(message) {
+                // Detect if it's a story request
+                const isStoryRequest = /write.*story|tell.*story|create.*story|story about|once upon|narrative/i.test(message);
+                
+                if (isStoryRequest) {
+                    return `Write a creative and engaging story based on this request: ${message}
+                    
+Story:`;
+                } else if (message.toLowerCase().includes('question') || message.endsWith('?')) {
+                    return `Question: ${message}
+                    
+Answer:`;
+                } else {
+                    return `Human: ${message}
+
+AI Assistant:`;
+                }
+            }
+
+            cleanupResponse(response, originalMessage) {
+                if (!response) return 'I apologize, but I couldn\'t generate a proper response.';
+                
+                // Clean up the response
+                let cleaned = response.trim();
+                
+                // Remove any repetition of the original prompt
+                const promptVariations = [
+                    originalMessage,
+                    `Human: ${originalMessage}`,
+                    `Question: ${originalMessage}`,
+                    'AI Assistant:',
+                    'Answer:',
+                    'Story:'
+                ];
+                
+                for (const variation of promptVariations) {
+                    cleaned = cleaned.replace(new RegExp(variation, 'gi'), '').trim();
+                }
+                
+                // Remove leading colons or dashes
+                cleaned = cleaned.replace(/^[:\-\s]+/, '');
+                
+                // Limit length to prevent overly long responses
+                if (cleaned.length > 800) {
+                    // Try to end at a sentence boundary
+                    const sentences = cleaned.substring(0, 800).split(/[.!?]+/);
+                    sentences.pop(); // Remove potentially incomplete last sentence
+                    cleaned = sentences.join('.') + '.';
+                }
+                
+                return cleaned || 'I understand. How else can I help you?';
+            }
+
+            getFallbackResponse(message) {
+                const lowerMessage = message.toLowerCase();
+                
+                if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
+                    return '👋 Hello! How can I help you today?';
+                } else if (lowerMessage.includes('how are you')) {
+                    return '😊 I\'m doing well, thank you for asking! How can I assist you?';
+                } else if (lowerMessage.includes('name')) {
+                    return '🤖 I\'m your AI assistant powered by DeepAI! What would you like to know?';
+                } else if (lowerMessage.includes('help')) {
+                    return '💡 I\'m here to help! You can ask me questions, request stories, or just have a conversation.';
+                } else if (lowerMessage.includes('story') || lowerMessage.includes('write')) {
+                    return '📚 I\'d love to help you with creative writing! Unfortunately, I\'m having trouble connecting to the AI service right now. Please try again in a moment.';
+                } else if (lowerMessage.includes('thank')) {
+                    return '🙏 You\'re very welcome! Is there anything else I can help you with?';
+                } else if (lowerMessage.includes('bye') || lowerMessage.includes('goodbye')) {
+                    return '👋 Goodbye! It was wonderful chatting with you!';
+                } else {
+                    const responses = [
+                        '🤔 That\'s interesting! I\'d love to discuss that further, but I\'m having connection issues right now.',
+                        '💭 I understand what you\'re saying. Please try asking again in a moment.',
+                        '🔄 I\'m currently experiencing some technical difficulties. Please try your request again.',
+                        '⚡ I\'m here to help! There seems to be a temporary connection issue. Please retry your message.'
+                    ];
+                    return responses[Math.floor(Math.random() * responses.length)];
+                }
+            }
+        }
+
+        // Initialize the chatbot when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new DeepAIChatbot();
+        });
+    </script>
+</body>
+</html>
